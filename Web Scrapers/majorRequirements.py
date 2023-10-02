@@ -89,13 +89,14 @@ for major_div in requirements_panel.find_all('div', recursive=False)[1:]:
     title_div =  major_div.find_all('div', recursive=False)[0]
     sentence = title_div.find('div').get_text(strip=True)
     major_name = sentence.split(" in ")[-1]
+
     second_div = major_div.find_all('div', recursive=False)[1]
     table = second_div.find('table')
     results[major_name] = {}
 
 
     # Iterate through each row in the table body
-    for row in table.find('tbody').find_all('tr')[1:2]:
+    for row in table.find('tbody').find_all('tr')[1:4]:
 
         # Find the first cell in the row, which contains the level
         level_cell = row.find('td')
@@ -110,11 +111,12 @@ for major_div in requirements_panel.find_all('div', recursive=False)[1:]:
            # papers_cell = level_cell.find_next_sibling('td')
 
             # Find all the anchor tags within the papers cell, which contain the paper links and codes
-            paper_links = level_cell.find_all('a')
+            paper_links = row.find_all('a')
             papers = [link.attrs['href'].split('=')[-1] for link in paper_links if '=' in link.attrs['href']]
-            results[major_name][level] = updated_paper_codes = update_paper_codes(papers)
+            results[major_name][level] = update_paper_codes(papers)
+            print(results[major_name][level])
             # Print the level and the corresponding papers
             #print(f"{level}: {updated_paper_codes}")
 
-with open("BachelorOfTheology.json", "w") as outfile:
-    json.dump(results, outfile, indent=4)
+with open("testMe.json", "w") as outfile:
+   json.dump(results, outfile, indent=4)
