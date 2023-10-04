@@ -92,20 +92,9 @@ for major_div in requirements_panel.find_all('div', recursive=False)[1:]:
     title_div = major_div.find_all('div', recursive=False)[0]
     sentence = title_div.find('div').get_text(strip=True)
     major_name = sentence.split(" in ")[-1]
-
     second_div = major_div.find_all('div', recursive=False)[1]
     table = second_div.find('table')
-    # # Extract text from the table
-    # table_text = ''
-    # for row in table.find_all('tr'):
-    #     for cell in row.find_all(['td', 'th']):
-    #         table_text += cell.get_text(strip=True) + '\t'
-    #     table_text += '\n'
-    #
-    # print(table_text)
-
     results[major_name] = {}
-
 
     # Iterate through each row in the table body
     for row in table.find('tbody').find_all('tr')[1:4]:
@@ -128,36 +117,32 @@ for major_div in requirements_panel.find_all('div', recursive=False)[1:]:
                 paragraphs = papers_cell.find_all('p')
                 if paragraphs:
                     for p in paragraphs:
-                        # Extract only the first word (number)
+                        # Extract the first word
                         papers_text = p.get_text()
-                        n_of = papers_text.split()[0].lower()
-                        n_of_str = n_of + "_of_papers"
+                        first_word = papers_text.split()[0].lower()
 
-                        # if first word is a number
-                        if (is_n_of(n_of)):
+                        # Check if it is a number
+                        if is_n_of(first_word):
+                            n_of_str = first_word + "_of_papers"
                             papers = {}
-                            # Check if it contains '-level'
-                            if '-level' in papers_text:
 
+                            # Check if paragraph contains '-level' anchor to a list of papers
+                            if '-level' in papers_text:
                                 paper_links = row.find_all('a')
                                 papers = [link.attrs['href'].split('=')[-1] for link in paper_links if
                                           '=' in link.attrs['href']]
-
                             else:
                                 # Extract the text content of the anchor tags and store in a list
                                 papers = [anchor.get_text(strip=True) for anchor in p.find_all('a') if
                                            '-level' not in anchor.get_text(strip=True)]
 
-
                             results[major_name][level][n_of_str] = update_paper_codes(papers)
 
-                        # if first word is an anchor
+                        # Else, if first word is an anchor
                         else:
                             # Check if the first element in p is a paper link
                             paper_link = p.find('a')
-
                             if paper_link:
-
                                 # Ensure "compulsory_papers" exists in the dictionary
                                 if "compulsory_papers" not in results[major_name][level]:
                                     results[major_name][level]["compulsory_papers"] = []
@@ -165,17 +150,18 @@ for major_div in requirements_panel.find_all('div', recursive=False)[1:]:
                                 # Append the anchors to the existing "compulsory_papers" list
                                 results[major_name][level]["compulsory_papers"].append(paper_link.get_text(strip=True))
 
+                # if td contains no paragraphs (i.e., there is one row of text)
                 else:
                     papers_text = papers_cell.get_text()
-                    n_of = papers_text.split()[0].lower()
-                    n_of_str = n_of + "_of_papers"
+                    first_word = papers_text.split()[0].lower()
 
                     # if first word is a number
-                    if (is_n_of(n_of)):
+                    if is_n_of(first_word):
+                        n_of_str = first_word + "_of_papers"
                         papers = {}
-                        # Check if it contains '-level'
-                        if '-level' in papers_text:
 
+                        # Check if paragraph contains '-level' anchor to a list of papers
+                        if '-level' in papers_text:
                             paper_links = row.find_all('a')
                             papers = [link.attrs['href'].split('=')[-1] for link in paper_links if
                                       '=' in link.attrs['href']]
@@ -187,70 +173,30 @@ for major_div in requirements_panel.find_all('div', recursive=False)[1:]:
 
                         results[major_name][level][n_of_str] = update_paper_codes(papers)
 
-                    # if first word is an anchor
+                    # Else, if first word is an anchor
                     else:
                         # Check if the first element in p is an anchor
                         paper = papers_text.find('a')
 
                         if paper:
-
                             # Ensure "compulsory_papers" exists in the dictionary
                             if "compulsory_papers" not in results[major_name][level]:
                                 results[major_name][level]["compulsory_papers"] = []
 
                             # Append the anchors to the existing "compulsory_papers" list
                             results[major_name][level]["compulsory_papers"].append(paper.get_text(strip=True))
-                            # # Check if there are paragraphs in papers_cell
-                            # paragraphs = papers_cell.find_all('p')
-                            # if paragraphs:
-                            #     for p in paragraphs:
-                            #         # Extract only the first word (number)
-                            #         papers_text = p.get_text()
-                            #         n_of = papers_text.split()[0].lower()
-                            #
-                            #         anchors = []
-                            #         if (is_n_of(n_of)):
-                            #             # Add to the results structure
-                            #             # Assuming there is a key in the results structure to store this information
-                            #             # Extract the text content of the anchor tags and store in a list
-                            #             anchors = [anchor.get_text(strip=True) for anchor in p.find_all('a') if
-                            #                        '-level' not in anchor.get_text(strip=True)]
-                            #
-                            #             results[major_name][level][n_of_str] = anchors
-                            #
-                            #         # Extract the text content of the anchor tags and store in a list
-                            #         anchors = [anchor.get_text(strip=True) for anchor in p.find_all('a') if
-                            #                    '-level' not in anchor.get_text(strip=True)]
-                            #
-                            #         # Check if the list is not empty before processing
-                            #         if anchors:
-                            #             # Add to the results structure
-                            #             # Assuming there is a key in the results structure to store this information
-                            #             results[major_name][level][n_of_str] = anchors
-                            #             if papers_cell:
-                            #                 # Extract only the first word (number)
-                            #                 words = papers_cell.get_text(strip=True).split()
-                            #
-                            #                 # Check if there are words before checking if it's an anchor
-                            #                 if words:
-                            #                     first_word = words[0]
-                            #
-                            #                     # Check if the first word is an anchor
-                            #                     if papers_cell.find('a') and first_word.lower() == 'a':
-                            #                         print(first_word)
-                            #                     else:
-                            #                         # Extract only the first word (number)
-                            #                         papers_text = papers_cell.get_text()
-                            #                         n_of = papers_text.split()[0].lower()
-                            #
-                            #                         if (is_n_of(n_of)):
-                            #                             # Add to the results structure
-                            #                             # Assuming there is a key in the results structure to store this information
-                            #                             # Extract the text content of the anchor tags and store in a list
-                            #                             anchors = [anchor.get_text(strip=True) for anchor in p.find_all('a') if
-                            #                                        '-level' not in anchor.get_text(strip=True)]
-                            #                             results[major_name][level][n_of_str] = anchors
 
+        # Find the next <tr> element after the current row
+        next_row = row.find_next_sibling('tr')
+        paragraph = next_row.find('p')
+        points = 0
+        if paragraph:
+            plus_text = paragraph.get_text()
+            points = plus_text.split()[0].lower()
+
+        # Check if the next_row exists before attempting to process it
+        if next_row:
+            results[major_name]["remaining_points"] = points
 
 with open("testRequirements.json", "w") as outfile:
    json.dump(results, outfile, indent=4)
