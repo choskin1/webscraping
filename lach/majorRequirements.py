@@ -97,6 +97,7 @@ for major_div in requirements_panel.find_all('div', recursive=False)[1:]:
     results[major_name] = {}
 
     # Iterate through each row in the table body
+    # Iterate through each row in the table body
     for row in table.find('tbody').find_all('tr')[1:4]:
         # Find the first cell in the row, which contains the level
         level_cell = row.find('td')
@@ -108,7 +109,17 @@ for major_div in requirements_panel.find_all('div', recursive=False)[1:]:
             # Extract the level text
             level = level_cell.get_text(strip=True)
 
-            results[major_name][level] = {}
+            # Check if the major_name key exists in the dictionary, if not, create it
+            if major_name not in results:
+                results[major_name] = {"levels": {}}
+
+            # Check if the "levels" key exists in the major's dictionary, if not, create it
+            if "levels" not in results[major_name]:
+                results[major_name]["levels"] = {}
+
+            # Check if the level key exists in the levels dictionary, if not, create it
+            if level not in results[major_name]["levels"]:
+                results[major_name]["levels"][level] = {}
 
             # Find the next <td> element after level_cell
             papers_cell = level_cell.find_next_sibling('td')
@@ -126,17 +137,12 @@ for major_div in requirements_panel.find_all('div', recursive=False)[1:]:
                             n_of_str = first_word + "_of_papers"
                             papers = {}
 
-                            # Check if paragraph contains '-level' anchor to a list of papers
-                            if '-level' in papers_text:
-                                paper_links = row.find_all('a')
-                                papers = [link.attrs['href'].split('=')[-1] for link in paper_links if
-                                          '=' in link.attrs['href']]
-                            else:
-                                # Extract the text content of the anchor tags and store in a list
-                                papers = [anchor.get_text(strip=True) for anchor in p.find_all('a') if
-                                           '-level' not in anchor.get_text(strip=True)]
+                            paper_links = row.find_all('a')
+                            # Extract the text content of the anchor tags and store in a list
+                            papers = [link.attrs['href'].split('=')[-1] for link in paper_links if
+                                      '=' in link.attrs['href']]
 
-                            results[major_name][level][n_of_str] = update_paper_codes(papers)
+                            results[major_name]["levels"][level][n_of_str] = update_paper_codes(papers)
 
                         # Else, if first word is an anchor
                         else:
@@ -144,11 +150,12 @@ for major_div in requirements_panel.find_all('div', recursive=False)[1:]:
                             paper_link = p.find('a')
                             if paper_link:
                                 # Ensure "compulsory_papers" exists in the dictionary
-                                if "compulsory_papers" not in results[major_name][level]:
-                                    results[major_name][level]["compulsory_papers"] = []
+                                if "compulsory_papers" not in results[major_name]["levels"][level]:
+                                    results[major_name]["levels"][level]["compulsory_papers"] = []
 
                                 # Append the anchors to the existing "compulsory_papers" list
-                                results[major_name][level]["compulsory_papers"].append(paper_link.get_text(strip=True))
+                                results[major_name]["levels"][level]["compulsory_papers"].append(
+                                    paper_link.get_text(strip=True))
 
                 # if td contains no paragraphs (i.e., there is one row of text)
                 else:
@@ -171,7 +178,7 @@ for major_div in requirements_panel.find_all('div', recursive=False)[1:]:
                             papers = [anchor.get_text(strip=True) for anchor in p.find_all('a') if
                                       '-level' not in anchor.get_text(strip=True)]
 
-                        results[major_name][level][n_of_str] = update_paper_codes(papers)
+                        results[major_name]["levels"][level][n_of_str] = update_paper_codes(papers)
 
                     # Else, if first word is an anchor
                     else:
@@ -180,23 +187,31 @@ for major_div in requirements_panel.find_all('div', recursive=False)[1:]:
 
                         if paper:
                             # Ensure "compulsory_papers" exists in the dictionary
-                            if "compulsory_papers" not in results[major_name][level]:
-                                results[major_name][level]["compulsory_papers"] = []
+                            if "compulsory_papers" not in results[major_name]["levels"][level]:
+                                results[major_name]["levels"][level]["compulsory_papers"] = []
 
                             # Append the anchors to the existing "compulsory_papers" list
-                            results[major_name][level]["compulsory_papers"].append(paper.get_text(strip=True))
+                            results[major_name]["levels"][level]["compulsory_papers"].append(paper.get_text(strip=True))
 
         # Find the next <tr> element after the current row
         next_row = row.find_next_sibling('tr')
-        paragraph = next_row.find('p')
-        points = 0
-        if paragraph:
-            plus_text = paragraph.get_text()
-            points = plus_text.split()[0].lower()
+        plus = next_row.find('td')
+        if plus:
+            if "Plus" in plus:
+                paragraph = next_row.find('p')
+                if paragraph:
+                    plus_text = paragraph.get_text()
+                    # Use regular expression to find the first set of digits in the paragraph
+                    matches = re.findall(r'\d+', plus_text)
+                    # Convert each match to an integer and add it to the points list
+                    points = [int(match) for match in matches]
+                    # Check if the next_row exists before attempting to process it
+                    if len(points) == 3:
+                        results[major_name]["remaining_points"] = points[0]
+                        results[major_name]["points_at_" + str(points[2]) + "-level"] = points[1]
+                    else:
+                        results[major_name]["remaining_points"] = points[0]
 
-        # Check if the next_row exists before attempting to process it
-        if next_row:
-            results[major_name]["remaining_points"] = points
 
-with open("testRequirements.json", "w") as outfile:
+with open("majorRequirements.json", "w") as outfile:
    json.dump(results, outfile, indent=4)
