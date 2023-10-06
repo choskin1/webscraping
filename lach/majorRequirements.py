@@ -207,10 +207,10 @@ for major_div in requirements_panel.find_all('div', recursive=False)[1:]:
                     points = [int(match) for match in matches]
                     # Check if the next_row exists before attempting to process it
                     if len(points) == 3:
-                        results[major_name]["remaining_points"] = points[0]
+                        results[major_name]["further_points"] = points[0]
                         results[major_name]["points_at_" + str(points[2]) + "-level"] = points[1]
                     else:
-                        results[major_name]["remaining_points"] = points[0]
+                        results[major_name]["further_points"] = points[0]
 
 
 with open("majorRequirements.json", "w") as outfile:
